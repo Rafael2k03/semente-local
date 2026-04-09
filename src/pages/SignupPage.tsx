@@ -6,19 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Sprout, Eye, EyeOff, ChevronLeft, Check } from "lucide-react";
 import sementeLogo from "@/assets/semente-logo.png";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
-type Step = "info" | "role" | "credentials" | "otp" | "done";
-type AuthMethod = "phone" | "email";
+type Step = "info" | "role" | "credentials" | "done";
 type UserRole = "morador" | "comerciante";
 
 const SignupPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp } = useAuth();
   const [step, setStep] = useState<Step>("info");
-  const [method, setMethod] = useState<AuthMethod>("phone");
   const [loading, setLoading] = useState(false);
 
-  // Form state
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -26,7 +25,6 @@ const SignupPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [otp, setOtp] = useState("");
 
   const formatCpf = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -63,35 +61,31 @@ const SignupPage = () => {
     setStep("credentials");
   };
 
-  const handleCredentialsNext = () => {
-    if (method === "email") {
-      if (!email) { toast({ title: "E-mail obrigatório", variant: "destructive" }); return; }
-      if (password.length < 6) { toast({ title: "Senha muito curta", description: "A senha deve ter no mínimo 6 caracteres.", variant: "destructive" }); return; }
-    }
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setStep("otp");
-      toast({ title: "Código enviado!", description: method === "phone" ? `Enviamos para ${telefone}` : `Enviamos para ${email}` });
-    }, 1200);
-  };
+  const handleCreateAccount = async () => {
+    if (!email) { toast({ title: "E-mail obrigatório", variant: "destructive" }); return; }
+    if (password.length < 6) { toast({ title: "Senha muito curta", description: "A senha deve ter no mínimo 6 caracteres.", variant: "destructive" }); return; }
 
-  const handleVerify = () => {
-    if (otp.length < 4) { toast({ title: "Código inválido", description: "Tente novamente.", variant: "destructive" }); return; }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    const { error } = await signUp(email, password, {
+      full_name: nome,
+      cpf: cpf.replace(/\D/g, ""),
+      phone: telefone.replace(/\D/g, ""),
+      account_type: role,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
+    } else {
       setStep("done");
-    }, 1200);
+    }
   };
 
-  const stepNumber = { info: 1, role: 2, credentials: 3, otp: 4, done: 5 };
-  const totalSteps = 4;
+  const stepNumber = { info: 1, role: 2, credentials: 3, done: 4 };
 
   const goBack = () => {
     if (step === "role") setStep("info");
     else if (step === "credentials") setStep("role");
-    else if (step === "otp") setStep("credentials");
   };
 
   return (
@@ -103,15 +97,12 @@ const SignupPage = () => {
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               <Sprout className="h-5 w-5 text-primary" /> Criar conta
             </h1>
-            {/* Progress bar */}
             <div className="mt-4 flex w-full gap-1.5">
-              {[1, 2, 3, 4].map((s) => (
+              {[1, 2, 3].map((s) => (
                 <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${stepNumber[step] >= s ? "bg-primary" : "bg-muted"}`} />
               ))}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Passo {Math.min(stepNumber[step], totalSteps)} de {totalSteps}
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground">Passo {Math.min(stepNumber[step], 3)} de 3</p>
           </div>
         )}
 
@@ -143,119 +134,59 @@ const SignupPage = () => {
           {step === "role" && (
             <motion.div key="role" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <p className="text-sm font-medium text-foreground">Qual o tipo da sua conta?</p>
-              <button
-                onClick={() => setRole("morador")}
-                className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-colors ${role === "morador" ? "border-primary bg-primary/5" : "border-border"}`}
-              >
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${role === "morador" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                  🏠
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">Morador</p>
-                  <p className="text-xs text-muted-foreground">Pessoa física da comunidade</p>
-                </div>
-                {role === "morador" && <Check className="ml-auto h-5 w-5 text-primary" />}
-              </button>
-              <button
-                onClick={() => setRole("comerciante")}
-                className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-colors ${role === "comerciante" ? "border-primary bg-primary/5" : "border-border"}`}
-              >
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full ${role === "comerciante" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                  🏪
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">Comerciante</p>
-                  <p className="text-xs text-muted-foreground">Loja ou negócio local</p>
-                </div>
-                {role === "comerciante" && <Check className="ml-auto h-5 w-5 text-primary" />}
-              </button>
+              {(["morador", "comerciante"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRole(r)}
+                  className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-colors ${role === r ? "border-primary bg-primary/5" : "border-border"}`}
+                >
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${role === r ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                    {r === "morador" ? "🏠" : "🏪"}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">{r === "morador" ? "Morador" : "Comerciante"}</p>
+                    <p className="text-xs text-muted-foreground">{r === "morador" ? "Pessoa física da comunidade" : "Loja ou negócio local"}</p>
+                  </div>
+                  {role === r && <Check className="ml-auto h-5 w-5 text-primary" />}
+                </button>
+              ))}
               <Button onClick={handleRoleNext} className="h-12 w-full rounded-xl text-base font-semibold">Continuar</Button>
             </motion.div>
           )}
 
           {step === "credentials" && (
             <motion.div key="credentials" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <p className="text-sm font-medium text-foreground">Como deseja acessar sua conta?</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setMethod("phone")}
-                  className={`flex-1 rounded-xl border-2 p-3 text-sm font-medium transition-colors ${method === "phone" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  📱 Telefone
-                </button>
-                <button
-                  onClick={() => setMethod("email")}
-                  className={`flex-1 rounded-xl border-2 p-3 text-sm font-medium transition-colors ${method === "email" ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground"}`}
-                >
-                  ✉️ E-mail
-                </button>
-              </div>
-
-              {method === "email" && (
-                <>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-foreground">Digite seu e-mail</label>
-                    <Input type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl text-base" />
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-foreground">Crie uma senha</label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Mínimo 6 caracteres"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-12 rounded-xl text-base pr-12"
-                      />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {password && (
-                      <div className="mt-2">
-                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                          <div className={`h-full rounded-full transition-all ${passwordStrength().color} ${passwordStrength().width}`} />
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">Força: {passwordStrength().label}</p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {method === "phone" && (
-                <p className="text-sm text-muted-foreground">
-                  Enviaremos um código de verificação para <span className="font-semibold text-foreground">{telefone}</span>
-                </p>
-              )}
-
-              <Button onClick={handleCredentialsNext} disabled={loading} className="h-12 w-full rounded-xl text-base font-semibold">
-                {loading ? "Enviando..." : method === "phone" ? "Receber código" : "Criar conta"}
-              </Button>
-            </motion.div>
-          )}
-
-          {step === "otp" && (
-            <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Código de verificação</label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="000000"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  className="h-14 rounded-xl text-center text-2xl tracking-[0.5em]"
-                />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Enviamos um código para {method === "phone" ? telefone : email}
-                </p>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Digite seu e-mail</label>
+                <Input type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl text-base" />
               </div>
-              <Button onClick={handleVerify} disabled={loading} className="h-12 w-full rounded-xl text-base font-semibold">
-                {loading ? "Verificando..." : "Verificar"}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Crie uma senha</label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Mínimo 6 caracteres"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-12 rounded-xl text-base pr-12"
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateAccount()}
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {password && (
+                  <div className="mt-2">
+                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${passwordStrength().color} ${passwordStrength().width}`} />
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">Força: {passwordStrength().label}</p>
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleCreateAccount} disabled={loading} className="h-12 w-full rounded-xl text-base font-semibold">
+                {loading ? "Criando conta..." : "Criar conta"}
               </Button>
-              <button onClick={handleCredentialsNext} className="w-full text-center text-sm text-primary">Reenviar código</button>
             </motion.div>
           )}
 
@@ -266,10 +197,10 @@ const SignupPage = () => {
               </div>
               <h2 className="text-xl font-bold text-foreground">Conta criada com sucesso!</h2>
               <p className="text-sm text-muted-foreground">
-                Bem-vindo(a) à comunidade Semente, {nome.split(" ")[0]}!
+                Bem-vindo(a) à comunidade Semente, {nome.split(" ")[0]}! Verifique seu e-mail para confirmar sua conta.
               </p>
-              <Button onClick={() => navigate("/")} className="h-12 w-full rounded-xl text-base font-semibold">
-                Acessar minha carteira
+              <Button onClick={() => navigate("/login")} className="h-12 w-full rounded-xl text-base font-semibold">
+                Ir para login
               </Button>
             </motion.div>
           )}
