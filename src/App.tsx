@@ -28,6 +28,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/cadastro" element={<SignupPage />} />
+          <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
           <Route path="/transferir" element={<TransferPage />} />
           <Route path="/qrcode" element={<QRCodePage />} />
           <Route path="/extrato" element={<HistoryPage />} />
