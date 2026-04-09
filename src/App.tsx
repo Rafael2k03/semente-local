@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import TransferPage from "./pages/TransferPage";
 import QRCodePage from "./pages/QRCodePage";
 import HistoryPage from "./pages/HistoryPage";
