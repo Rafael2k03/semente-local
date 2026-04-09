@@ -6,6 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import TransferPage from "./pages/TransferPage";
 import QRCodePage from "./pages/QRCodePage";
 import HistoryPage from "./pages/HistoryPage";
@@ -26,6 +28,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/cadastro" element={<SignupPage />} />
+          <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
           <Route path="/transferir" element={<TransferPage />} />
           <Route path="/qrcode" element={<QRCodePage />} />
           <Route path="/extrato" element={<HistoryPage />} />
