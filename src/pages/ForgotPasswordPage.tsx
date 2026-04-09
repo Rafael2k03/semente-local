@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Sprout, ChevronLeft, Check } from "lucide-react";
 import sementeLogo from "@/assets/semente-logo.png";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ForgotPasswordPage = () => {
   const { toast } = useToast();
@@ -13,16 +14,21 @@ const ForgotPasswordPage = () => {
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!email) {
       toast({ title: "E-mail obrigatório", description: "Digite seu e-mail cadastrado.", variant: "destructive" });
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    } else {
       setSent(true);
-    }, 1200);
+    }
   };
 
   return (
