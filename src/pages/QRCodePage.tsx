@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, QrCode, Camera } from "lucide-react";
+import { ArrowLeft, QrCode, Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Scanner } from "@yudiel/react-qr-scanner";
+import { useToast } from "@/hooks/use-toast";
 
 const QRCodePage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [tab, setTab] = useState<"receive" | "scan">("receive");
   const [amount, setAmount] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [scannedValue, setScannedValue] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -64,17 +69,66 @@ const QRCodePage = () => {
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6">
-            <div className="flex flex-col items-center rounded-2xl bg-card p-12 shadow-card">
-              <div className="flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-muted">
-                <Camera className="h-16 w-16 text-muted-foreground" />
+            {!scanning ? (
+              <div className="flex flex-col items-center rounded-2xl bg-card p-12 shadow-card">
+                <div className="flex h-48 w-48 items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-muted">
+                  <Camera className="h-16 w-16 text-muted-foreground" />
+                </div>
+                <p className="mt-4 text-center text-sm text-muted-foreground">
+                  {scannedValue ? "QR Code lido com sucesso!" : "Aponte a câmera para o QR Code"}
+                </p>
+                {scannedValue && (
+                  <div className="mt-3 w-full break-all rounded-lg bg-muted p-3 text-center text-xs text-foreground">
+                    {scannedValue}
+                  </div>
+                )}
+                <Button
+                  onClick={() => {
+                    setScannedValue(null);
+                    setScanning(true);
+                  }}
+                  className="mt-6 h-12 w-full rounded-xl text-base font-semibold"
+                >
+                  {scannedValue ? "Escanear outro" : "Abrir câmera"}
+                </Button>
               </div>
-              <p className="mt-4 text-sm text-muted-foreground">
-                Aponte a câmera para o QR Code
-              </p>
-              <Button className="mt-6 h-12 w-full rounded-xl text-base font-semibold">
-                Abrir câmera
-              </Button>
-            </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl bg-card shadow-card">
+                <div className="relative aspect-square w-full bg-black">
+                  <Scanner
+                    onScan={(detected) => {
+                      if (detected && detected.length > 0) {
+                        const value = detected[0].rawValue;
+                        setScannedValue(value);
+                        setScanning(false);
+                        toast({ title: "QR Code lido", description: value.slice(0, 60) });
+                      }
+                    }}
+                    onError={(err) => {
+                      const message = err instanceof Error ? err.message : String(err);
+                      toast({
+                        title: "Erro ao acessar câmera",
+                        description: message || "Verifique as permissões do navegador.",
+                        variant: "destructive",
+                      });
+                      setScanning(false);
+                    }}
+                    constraints={{ facingMode: "environment" }}
+                    styles={{ container: { width: "100%", height: "100%" } }}
+                  />
+                  <button
+                    onClick={() => setScanning(false)}
+                    className="absolute right-3 top-3 rounded-full bg-black/60 p-2 text-white"
+                    aria-label="Fechar câmera"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <p className="px-4 py-3 text-center text-xs text-muted-foreground">
+                  Permita o acesso à câmera quando solicitado
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
       </div>
